@@ -15,6 +15,7 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 use button::{button_handler, mouse_button_input, scroll_events, touchpad_gestures};
 use constant::{Earth::DISTANCE_TO_SUN, Moon::DISTANCE_TO_EARTH, SPACE_SCALE, TIME_SCALE};
+
 #[derive(Component)]
 struct Earth {
     distance_to_sun: f32,
@@ -64,7 +65,12 @@ fn main() {
                 scroll_events,
             ),
         )
-        .run();
+        .run()
+    // #[cfg(debug_assertions)] // debug/dev builds only
+    // {
+    //     use bevy::diagnostic::LogDiagnosticsPlugin;
+    //     app.add_plugins(LogDiagnosticsPlugin::default());
+    // }
 }
 
 fn move_moon(
@@ -123,42 +129,41 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
-    commands
-        .spawn(PointLightBundle {
-            point_light: PointLight {
-                intensity: 9000.0,
-                // range: 300.,
-                // radius: 60.0,
-                shadows_enabled: true,
-                ..default()
-            },
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
-            ..default()
-        })
-        .with_children(|builder| {
-            let scene = asset_server.load("sun.glb#Scene0");
-            builder.spawn((SceneBundle {
-                scene: scene,
-                transform: Transform::from_xyz(0., 0., 0.).with_scale(Vec3::splat(50.)),
-                ..default()
-            },));
-        });
+    // commands
+    //     .spawn(PointLightBundle {
+    //         point_light: PointLight {
+    //             intensity: 9000.0,
+    //             // range: 300.,
+    //             // radius: 60.0,
+    //             shadows_enabled: true,
+    //             ..default()
+    //         },
+    //         transform: Transform::from_xyz(0.0, 0.0, 0.0),
+    //         ..default()
+    //     })
+    //     .with_children(|builder| {
+    //         let scene = asset_server.load("sun.glb#Scene0");
+    //         builder.spawn((SceneBundle {
+    //             scene: scene,
+    //             transform: Transform::from_xyz(0., 0., 0.).with_scale(Vec3::splat(50.)),
+    //             ..default()
+    //         },));
+    //     });
 
     // Sun
-    // let scene = asset_server.load("sun.glb#Scene0");
-    // commands.spawn((SceneBundle {
-    //     scene: scene,
-    //     transform: Transform::from_xyz(0., 0., 0.).with_scale(Vec3::splat(50.)),
-    //     ..default()
-    // },));
+    let scene = asset_server.load("sun.glb#Scene0");
+    commands.spawn((SceneBundle {
+        scene: scene,
+        transform: Transform::from_xyz(0., 0., 0.).with_scale(Vec3::splat(50.)),
+        ..default()
+    },));
 
     // Earth
-    let es = asset_server.load("earth2.glb#Scene0");
+    let es = asset_server.load("earth.glb#Scene0");
     commands.spawn((
         SceneBundle {
             scene: es,
-            transform: Transform::from_xyz(distance_to_sun, 0., 0.)
-                .with_scale(Vec3::splat(1.0 / 100.)),
+            transform: Transform::from_xyz(distance_to_sun, 0., 0.).with_scale(Vec3::splat(10.)),
             ..default()
         },
         Earth {
