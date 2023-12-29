@@ -1,5 +1,6 @@
 use bevy::{ecs::query, prelude::*};
 
+use crate::airplane::Airplane;
 use crate::{CameraFocus, CameraFocusType};
 #[derive(Component)]
 pub struct MoonButton;
@@ -12,6 +13,22 @@ pub enum ChangeViewButton {
     Earth,
     Moon,
     Global,
+    Airplane,
+    Uranus,
+    Neptune,
+}
+
+impl ChangeViewButton {
+    fn name(&self) -> String {
+        match *self {
+            ChangeViewButton::Earth => "Earth".into(),
+            ChangeViewButton::Moon => "Moon".into(),
+            ChangeViewButton::Airplane => "Airplane".into(),
+            ChangeViewButton::Uranus => "Uranus".into(),
+            ChangeViewButton::Neptune => "Neptune".into(),
+            _ => "Unknown".into(),
+        }
+    }
 }
 
 pub fn setup_button(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -59,37 +76,50 @@ pub fn setup_button(mut commands: Commands, asset_server: Res<AssetServer>) {
                 });
         })
         .with_children(|parent| {
-            parent
-                .spawn((
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(100.0),
-                            height: Val::Px(40.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            // horizontally center child text
-                            justify_content: JustifyContent::Center,
-                            // vertically center child text
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        border_color: BorderColor(Color::GRAY),
-                        background_color: Color::BLACK.into(),
-                        ..default()
-                    },
-                    ChangeViewButton::Moon,
-                ))
-                .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Moon",
-                        TextStyle {
-                            // font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                            font_size: 20.0,
-                            color: Color::rgb(0.9, 0.9, 0.9),
-                            ..default()
-                        },
-                    ));
-                });
+            add_button(parent, ChangeViewButton::Moon);
+        })
+        .with_children(|parent| {
+            add_button(parent, ChangeViewButton::Airplane);
+        })
+        .with_children(|parent| {
+            add_button(parent, ChangeViewButton::Uranus);
+        })
+        .with_children(|parent| {
+            add_button(parent, ChangeViewButton::Neptune);
         });
+}
+
+fn add_button(cmd: &mut ChildBuilder, btn: ChangeViewButton) {
+    let name = btn.name();
+    cmd.spawn((
+        ButtonBundle {
+            style: Style {
+                width: Val::Px(100.0),
+                height: Val::Px(40.0),
+                border: UiRect::all(Val::Px(5.0)),
+                // horizontally center child text
+                justify_content: JustifyContent::Center,
+                // vertically center child text
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            border_color: BorderColor(Color::GRAY),
+            background_color: Color::BLACK.into(),
+            ..default()
+        },
+        btn,
+    ))
+    .with_children(|parent| {
+        parent.spawn(TextBundle::from_section(
+            name,
+            TextStyle {
+                // font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                font_size: 20.0,
+                color: Color::rgb(0.9, 0.9, 0.9),
+                ..default()
+            },
+        ));
+    });
 }
 
 pub fn button_handler(
@@ -114,17 +144,16 @@ pub fn button_handler(
                 match btn {
                     ChangeViewButton::Earth => {
                         camera_focus.focus = CameraFocusType::Earth;
-                        // events.send(ChangeViewEvent::Earth);
-                        println!("earth pressed");
                     }
                     ChangeViewButton::Moon => {
                         camera_focus.focus = CameraFocusType::Moon;
-                        // events.send(ChangeViewEvent::Moon);
-                        println!("moon pressed");
                     }
                     ChangeViewButton::Global => {
                         camera_focus.focus = CameraFocusType::Global;
                     }
+                    ChangeViewButton::Airplane => camera_focus.focus = CameraFocusType::Airplane,
+                    ChangeViewButton::Uranus => camera_focus.focus = CameraFocusType::Uranus,
+                    ChangeViewButton::Neptune => camera_focus.focus = CameraFocusType::Neptune,
                 }
             }
             Interaction::Hovered => {
