@@ -1,10 +1,11 @@
 use std::f32::consts::PI;
 
 pub const ONE_DAY_SECONDS: f32 = (24 * 60 * 60) as f32;
-
+pub const TIME_SCALE: f32 = (24 * 60 * 6) as f32; // 10s => 1day
+pub const SPACE_SCALE: f32 = 1.0 / earth::RADIUS;
 pub mod mercury {
     use super::*;
-
+    pub const NAME: &str = "Mercury";
     const ORBITAL_PERIOD: f32 = 87.97; // day
     const ROTATION_PERIOD: f32 = 59.0; // day
     pub const ORBITAL_VELCITY: f32 = 2.0 * PI / (ORBITAL_PERIOD * ONE_DAY_SECONDS);
@@ -14,9 +15,8 @@ pub mod mercury {
 }
 
 pub mod venus {
-    //
     use super::*;
-
+    pub const NAME: &str = "Venus";
     const ORBITAL_PERIOD: f32 = 224.7; // day
     const ROTATION_PERIOD: f32 = 243.0; // day
     pub const ORBITAL_VELCITY: f32 = 2.0 * PI / (ORBITAL_PERIOD * ONE_DAY_SECONDS);
@@ -27,17 +27,18 @@ pub mod venus {
 
 pub mod earth {
     use super::*;
-
+    pub const NAME: &str = "Earth";
     const ORBITAL_PERIOD: f32 = 365.26; // day
     const ROTATION_PERIOD: f32 = 1.0; // day
     pub const ORBITAL_VELCITY: f32 = 2.0 * PI / (ORBITAL_PERIOD * ONE_DAY_SECONDS);
-    pub const ROTATION_VELCITY: f32 = 2.0 * PI / ONE_DAY_SECONDS;
+    pub const ROTATION_VELCITY: f32 = 2.0 * PI / (ROTATION_PERIOD * ONE_DAY_SECONDS);
     pub const RADIUS: f32 = 6371.0;
     pub const DISTANCE_TO_SUN: f32 = 149_597_871.0;
 }
 
 pub mod moon {
     use super::*;
+    pub const NAME: &str = "Moon";
     const ORBITAL_PERIOD: f32 = 27.3; // day
     const ROTATION_PERIOD: f32 = 27.3;
     pub const ORBITAL_VELCITY: f32 = 2.0 * PI / (ORBITAL_PERIOD * ONE_DAY_SECONDS);
@@ -48,7 +49,7 @@ pub mod moon {
 
 pub mod mars {
     use super::*;
-
+    pub const NAME: &str = "Mars";
     const ORBITAL_PERIOD: f32 = 687.0; // day
     const ROTATION_PERIOD: f32 = (24. + 37. / 60.) / 24.; // day 1d37min
     pub const ORBITAL_VELCITY: f32 = 2.0 * PI / (ORBITAL_PERIOD * ONE_DAY_SECONDS);
@@ -59,7 +60,7 @@ pub mod mars {
 
 pub mod jupiter {
     use super::*;
-
+    pub const NAME: &str = "Jupiter";
     const ORBITAL_PERIOD: f32 = 11.86 * 365.; // day 11.86years
     const ROTATION_PERIOD: f32 = (9. + 50.0 / 60.) / 24.; // day 9h50min
     pub const ORBITAL_VELCITY: f32 = 2.0 * PI / (ORBITAL_PERIOD * ONE_DAY_SECONDS);
@@ -70,7 +71,7 @@ pub mod jupiter {
 
 pub mod saturn {
     use super::*;
-
+    pub const NAME: &str = "Saturn";
     const ORBITAL_PERIOD: f32 = 29.46 * 365.; // day 29.46years
     const ROTATION_PERIOD: f32 = (10. + 39.0 / 60.) / 24.; // day 10h39min
     pub const ORBITAL_VELCITY: f32 = 2.0 * PI / (ORBITAL_PERIOD * ONE_DAY_SECONDS);
@@ -81,7 +82,7 @@ pub mod saturn {
 
 pub mod uranus {
     use super::*;
-
+    pub const NAME: &str = "Uranus";
     const ORBITAL_PERIOD: f32 = 84.01 * 365.; // day 84.01years
     const ROTATION_PERIOD: f32 = (17. + 14.0 / 60.) / 24.; // day
     pub const ORBITAL_VELCITY: f32 = 2.0 * PI / (ORBITAL_PERIOD * ONE_DAY_SECONDS);
@@ -92,7 +93,7 @@ pub mod uranus {
 
 pub mod neptune {
     use super::*;
-
+    pub const NAME: &str = "Neptune";
     const ORBITAL_PERIOD: f32 = 164.82 * 365.; // day 164.82years
     const ROTATION_PERIOD: f32 = (16. + 6.0 / 60.) / 24.; // day
     pub const ORBITAL_VELCITY: f32 = 2.0 * PI / (ORBITAL_PERIOD * ONE_DAY_SECONDS);
@@ -101,5 +102,6 @@ pub mod neptune {
     pub const DISTANCE_TO_SUN: f32 = 4_495_000_000.0;
 }
 
-pub const TIME_SCALE: f32 = (24 * 60 * 6) as f32; // 10s => 1day
-pub const SPACE_SCALE: f32 = 1.0 / earth::RADIUS;
+pub mod airplane {
+    pub const NAME: &str = "Airplane";
+}

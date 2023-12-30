@@ -1,82 +1,26 @@
-//! This example demonstrates the built-in 3d shapes in Bevy.
-//! The scene includes a patterned texture and a rotation for visualizing the normals and UVs.
-
 pub mod airplane;
 pub mod button;
 pub mod constant;
-
-use std::{f32::consts::PI, ops::Mul};
-
+pub mod planets;
+use crate::planets::CommonPlanets;
+use crate::planets::Planets;
 use airplane::{airplane_control, airplane_direction, set_plane, Airplane};
-use bevy::{
-    core::Zeroable,
-    ecs::query,
-    prelude::*,
-    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
-    window::WindowMode,
-};
+use bevy::{prelude::*, window::WindowMode};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-
-use button::{button_handler, mouse_button_input, scroll_events, touchpad_gestures};
-use constant::{earth::DISTANCE_TO_SUN, moon::DISTANCE_TO_EARTH, SPACE_SCALE, TIME_SCALE};
-
-#[derive(Component)]
-struct Mercury {
-    distance_to_sun: f32,
-}
-
-#[derive(Component)]
-struct Venus {
-    distance_to_sun: f32,
-}
-
-#[derive(Component)]
-struct Earth {
-    distance_to_sun: f32,
-}
+use button::{
+    button_handler, mouse_button_input, scroll_events, touchpad_gestures, ChangeViewButton,
+};
+use constant::{moon::DISTANCE_TO_EARTH, SPACE_SCALE};
+use planets::{move_planets, Earth};
 
 #[derive(Component)]
 struct Moon {
-    radius: f32,
     distance_to_earth: f32,
-}
-
-#[derive(Component)]
-struct Mars {
-    distance_to_sun: f32,
-}
-
-#[derive(Component)]
-struct Jupiter {
-    distance_to_sun: f32,
-}
-
-#[derive(Component)]
-struct Saturn {
-    distance_to_sun: f32,
-}
-
-#[derive(Component)]
-struct Uranus {
-    distance_to_sun: f32,
-}
-
-#[derive(Component)]
-struct Neptune {
-    distance_to_sun: f32,
 }
 
 #[derive(Resource)]
 pub struct CameraFocus {
-    focus: CameraFocusType,
-}
-enum CameraFocusType {
-    Earth,
-    Moon,
-    Global,
-    Airplane,
-    Uranus,
-    Neptune,
+    focus: String,
 }
 
 const PLANET_DISTANCE_TO_SUN_SCALE: f32 = 100000.0;
@@ -92,6 +36,7 @@ fn main() {
     };
 
     App::new()
+        .add_plugins(DefaultPlugins.set(window_plugin))
         .add_plugins(PanOrbitCameraPlugin)
         .insert_resource(ClearColor(Color::rgb(0.1, 0.0, 0.15)))
         .insert_resource(AmbientLight {
@@ -99,16 +44,13 @@ fn main() {
             brightness: 0.75,
         })
         .insert_resource(CameraFocus {
-            focus: CameraFocusType::Global,
+            focus: ChangeViewButton::Global.name().into(),
         })
-        .add_plugins(DefaultPlugins.set(window_plugin))
         .add_systems(Startup, (setup, button::setup_button, set_plane))
         .add_systems(
             Update,
             (
-                move_mercury,
                 move_moon,
-                move_earth,
                 axis,
                 button_handler,
                 camera_control,
@@ -117,6 +59,8 @@ fn main() {
                 scroll_events,
                 airplane_control,
                 airplane_direction,
+                move_planets::<CommonPlanets>,
+                move_planets::<Earth>,
             ),
         )
         .run()
@@ -161,47 +105,7 @@ fn move_moon(
     }
 }
 
-fn move_earth(time: Res<Time>, mut query: Query<(&mut Transform, &Earth)>) {
-    for (mut transform, earth) in &mut query {
-        // let movement = transf.forward() + transf.left();
-        transform.rotate_y(TIME_SCALE * constant::earth::ROTATION_VELCITY * time.delta_seconds());
-
-        let elapsed_seconds = time.elapsed_seconds();
-        let angle = elapsed_seconds * TIME_SCALE * constant::earth::ORBITAL_VELCITY;
-        transform.translation = Vec3::new(
-            earth.distance_to_sun * angle.cos(),
-            0.0,
-            earth.distance_to_sun * angle.sin(),
-        );
-    }
-}
-
-fn move_mercury(time: Res<Time>, mut query: Query<(&mut Transform, &Mercury)>) {
-    for (mut transform, mercury) in &mut query {
-        // let movement = transf.forward() + transf.left();
-        transform.rotate_y(TIME_SCALE * constant::mercury::ROTATION_VELCITY * time.delta_seconds());
-
-        let elapsed_seconds = time.elapsed_seconds();
-        let angle = elapsed_seconds * TIME_SCALE * constant::mercury::ORBITAL_VELCITY;
-        transform.translation = Vec3::new(
-            mercury.distance_to_sun * angle.cos(),
-            0.0,
-            mercury.distance_to_sun * angle.sin(),
-        );
-    }
-}
-
-// fn move_factory(entity: &impl Planet) -> impl Fn(Res<Time>, Query<(&mut Transform, Planet>)) {
-//     fn move_planets(time: Res<Time>, mut query: Query<(&mut Transform, &impl Planet)>) {}
-//     return move_planets;
-// }
-
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_server: Res<AssetServer>,
-) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // commands
     //     .spawn(PointLightBundle {
     //         point_light: PointLight {
@@ -225,7 +129,7 @@ fn setup(
 
     // Sun
     commands.spawn((SceneBundle {
-        scene: asset_server.load("sun.glb#Scene0"),
+        scene: asset_server.load("Sun.glb#Scene0"),
         transform: Transform::from_xyz(0., 0., 0.).with_scale(Vec3::splat(1. / 5.)),
         ..default()
     },));
@@ -233,7 +137,7 @@ fn setup(
     // Mercury
     commands.spawn((
         SceneBundle {
-            scene: asset_server.load("mercury.glb#Scene0"),
+            scene: asset_server.load("Mercury.glb#Scene0"),
             transform: Transform::from_xyz(
                 constant::mercury::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
                 0.,
@@ -242,15 +146,19 @@ fn setup(
             .with_scale(Vec3::splat(0.02)),
             ..default()
         },
-        Mercury {
-            distance_to_sun: constant::mercury::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
-        },
+        CommonPlanets::new(
+            constant::mercury::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::mercury::RADIUS,
+            constant::mercury::ROTATION_VELCITY,
+            constant::mercury::ORBITAL_VELCITY,
+            constant::mercury::NAME.into(),
+        ),
     ));
 
     // Venus
     commands.spawn((
         SceneBundle {
-            scene: asset_server.load("venus.glb#Scene0"),
+            scene: asset_server.load("Venus.glb#Scene0"),
             transform: Transform::from_xyz(
                 constant::venus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
                 0.,
@@ -259,13 +167,17 @@ fn setup(
             .with_scale(Vec3::splat(0.02)),
             ..default()
         },
-        Venus {
-            distance_to_sun: constant::venus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
-        },
+        CommonPlanets::new(
+            constant::venus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::venus::RADIUS,
+            constant::venus::ROTATION_VELCITY,
+            constant::venus::ORBITAL_VELCITY,
+            constant::venus::NAME.into(),
+        ),
     ));
 
     // Earth
-    let es = asset_server.load("earth.glb#Scene0");
+    let es = asset_server.load("Earth.glb#Scene0");
     commands.spawn((
         SceneBundle {
             scene: es,
@@ -277,29 +189,14 @@ fn setup(
             .with_scale(Vec3::splat(0.02)),
             ..default()
         },
-        Earth {
-            distance_to_sun: constant::earth::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
-        },
+        Earth::new(
+            constant::earth::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::earth::RADIUS,
+            constant::earth::ROTATION_VELCITY,
+            constant::earth::ORBITAL_VELCITY,
+            constant::earth::NAME.into(),
+        ),
     ));
-    // .with_children(|parent| {
-    //     // child cube
-    //     parent.spawn((
-    //         SceneBundle {
-    //             scene: asset_server.load("moon.glb#Scene0"),
-    //             transform: Transform::from_xyz(
-    //                 constant::Moon::DISTANCE_TO_EARTH * constant::SPACE_SCALE,
-    //                 0.,
-    //                 0.,
-    //             ),
-    //             // .with_scale(Vec3::splat(1. / constant::SPACE_SCALE)),
-    //             ..default()
-    //         },
-    //         Moon {
-    //             radius: constant::Moon::RADIUS * constant::SPACE_SCALE,
-    //             distance_to_earth: constant::Moon::DISTANCE_TO_EARTH * constant::SPACE_SCALE,
-    //         },
-    //     ));
-    // });
 
     // Moon
     commands.spawn((
@@ -320,13 +217,12 @@ fn setup(
         //     ..default()
         // },
         SceneBundle {
-            scene: asset_server.load("moon.glb#Scene0"),
+            scene: asset_server.load("Moon.glb#Scene0"),
             transform: Transform::from_xyz(100.0 + DISTANCE_TO_EARTH * SPACE_SCALE, 0., 0.)
                 .with_scale(Vec3::splat(1.0 / 120.)),
             ..default()
         },
         Moon {
-            radius: constant::moon::RADIUS * constant::SPACE_SCALE,
             distance_to_earth: constant::moon::DISTANCE_TO_EARTH * constant::SPACE_SCALE,
         },
     ));
@@ -334,7 +230,7 @@ fn setup(
     // Mars
     commands.spawn((
         SceneBundle {
-            scene: asset_server.load("mars.glb#Scene0"),
+            scene: asset_server.load("Mars.glb#Scene0"),
             transform: Transform::from_xyz(
                 constant::mars::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
                 0.,
@@ -343,9 +239,13 @@ fn setup(
             .with_scale(Vec3::splat(0.02)),
             ..default()
         },
-        Mars {
-            distance_to_sun: constant::mars::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
-        },
+        CommonPlanets::new(
+            constant::mars::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::mars::RADIUS,
+            constant::mars::ROTATION_VELCITY,
+            constant::mars::ORBITAL_VELCITY,
+            constant::mars::NAME.into(),
+        ),
     ));
 
     // Jupiter
@@ -360,9 +260,13 @@ fn setup(
             .with_scale(Vec3::splat(0.02)),
             ..default()
         },
-        Jupiter {
-            distance_to_sun: constant::jupiter::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
-        },
+        CommonPlanets::new(
+            constant::jupiter::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::jupiter::RADIUS,
+            constant::jupiter::ROTATION_VELCITY,
+            constant::jupiter::ORBITAL_VELCITY,
+            constant::jupiter::NAME.into(),
+        ),
     ));
 
     // Saturn
@@ -377,9 +281,13 @@ fn setup(
             .with_scale(Vec3::splat(0.02)),
             ..default()
         },
-        Saturn {
-            distance_to_sun: constant::saturn::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
-        },
+        CommonPlanets::new(
+            constant::saturn::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::saturn::RADIUS,
+            constant::saturn::ROTATION_VELCITY,
+            constant::saturn::ORBITAL_VELCITY,
+            constant::saturn::NAME.into(),
+        ),
     ));
 
     // Uranus
@@ -394,9 +302,16 @@ fn setup(
             .with_scale(Vec3::splat(0.02)),
             ..default()
         },
-        Uranus {
-            distance_to_sun: constant::uranus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
-        },
+        // Uranus {
+        //     distance_to_sun: constant::uranus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+        // }
+        CommonPlanets::new(
+            constant::uranus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::uranus::RADIUS,
+            constant::uranus::ROTATION_VELCITY,
+            constant::uranus::ORBITAL_VELCITY,
+            constant::uranus::NAME.into(),
+        ),
     ));
 
     // Neptune
@@ -411,9 +326,13 @@ fn setup(
             .with_scale(Vec3::splat(0.02)),
             ..default()
         },
-        Neptune {
-            distance_to_sun: constant::neptune::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
-        },
+        CommonPlanets::new(
+            constant::neptune::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::neptune::RADIUS,
+            constant::neptune::ROTATION_VELCITY,
+            constant::neptune::ORBITAL_VELCITY,
+            constant::neptune::NAME.into(),
+        ),
     ));
 
     commands.spawn((
@@ -429,7 +348,7 @@ fn setup(
     ));
 }
 
-fn axis(mut gizmos: Gizmos, time: Res<Time>, query: Query<&Transform, &Earth>) {
+fn axis(mut gizmos: Gizmos) {
     gizmos
         .circle(
             Vec3::ZERO,
@@ -525,38 +444,38 @@ fn camera_control(
         Query<(&Transform, &Moon)>,
         Query<(&Transform, &Earth)>,
         Query<(&Transform, &Airplane)>,
-        Query<(&Transform, &Uranus)>,
-        Query<(&Transform, &Neptune)>,
+        Query<(&Transform, &CommonPlanets)>,
     )>,
 ) {
     let mut target = Vec3::ZERO;
-    match camera_focus.focus {
-        CameraFocusType::Earth => {
+    match camera_focus.focus.as_str() {
+        constant::earth::NAME => {
             let query = set.p2();
             let earth = query.single();
             target += earth.0.translation;
         }
-        CameraFocusType::Moon => {
+        constant::moon::NAME => {
             let query = set.p1();
             let moon = query.single();
             target += moon.0.translation;
         }
-        CameraFocusType::Airplane => {
+        constant::airplane::NAME => {
             let query = set.p3();
             let plane = query.single();
             target += plane.0.translation;
         }
-        CameraFocusType::Uranus => {
+        "Global" => {
+            return;
+        }
+        _ => {
             let query = set.p4();
-            let plane = query.single();
-            target += plane.0.translation;
+            // let plane = query.single();
+            for (transform, planet) in &query {
+                if planet.name() == camera_focus.focus {
+                    target += transform.translation;
+                }
+            }
         }
-        CameraFocusType::Neptune => {
-            let query = set.p5();
-            let plane = query.single();
-            target += plane.0.translation;
-        }
-        CameraFocusType::Global => return,
     }
     let mut camera = set.p0();
     let mut camera = camera.single_mut();

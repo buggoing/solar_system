@@ -1,10 +1,9 @@
+use crate::constant;
 use bevy::{
     input::{keyboard::KeyboardInput, ButtonState},
     math::vec3,
     prelude::*,
 };
-
-use crate::constant;
 
 #[derive(Component)]
 pub struct Airplane {
