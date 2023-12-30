@@ -336,17 +336,24 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 
     commands.spawn((
+        MyCamera,
         Camera3dBundle {
             // projection: Projection::Perspective(PerspectiveProjection {
             //     far: 10000.0, // change the maximum render distance
             //     ..default()
             // }),
-            transform: Transform::from_xyz(0.0, 100., 0.0).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_xyz(0.0, 500., 0.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
-        PanOrbitCamera::default(),
+        PanOrbitCamera {
+            // target_focus: Vec3::new(0.0, 500., 0.0),
+            ..default()
+        },
     ));
 }
+
+#[derive(Component)]
+struct MyCamera;
 
 fn axis(mut gizmos: Gizmos) {
     gizmos
@@ -356,7 +363,7 @@ fn axis(mut gizmos: Gizmos) {
             constant::mercury::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
             Color::SILVER,
         )
-        .segments(128);
+        .segments(256);
 
     gizmos
         .circle(
@@ -365,7 +372,7 @@ fn axis(mut gizmos: Gizmos) {
             constant::venus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
             Color::OLIVE,
         )
-        .segments(128);
+        .segments(256);
 
     gizmos
         .circle(
@@ -374,7 +381,7 @@ fn axis(mut gizmos: Gizmos) {
             constant::earth::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
             Color::rgb_u8(70, 130, 180),
         )
-        .segments(128);
+        .segments(256);
 
     gizmos
         .circle(
@@ -383,7 +390,7 @@ fn axis(mut gizmos: Gizmos) {
             constant::mars::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
             Color::rgb_u8(232, 155, 0), // Yellow Ochre
         )
-        .segments(128);
+        .segments(256);
 
     gizmos
         .circle(
@@ -392,7 +399,7 @@ fn axis(mut gizmos: Gizmos) {
             constant::jupiter::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
             Color::SILVER,
         )
-        .segments(128);
+        .segments(256);
 
     gizmos
         .circle(
@@ -401,7 +408,7 @@ fn axis(mut gizmos: Gizmos) {
             constant::saturn::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
             Color::SILVER,
         )
-        .segments(128);
+        .segments(256);
 
     gizmos
         .circle(
@@ -410,7 +417,7 @@ fn axis(mut gizmos: Gizmos) {
             constant::uranus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
             Color::rgb_u8(32, 178, 170),
         )
-        .segments(128);
+        .segments(256);
 
     gizmos
         .circle(
@@ -420,7 +427,7 @@ fn axis(mut gizmos: Gizmos) {
             // Color::rgb_u8(0, 191, 255),
             Color::BLUE,
         )
-        .segments(128);
+        .segments(256);
 
     gizmos.ray(
         Vec3::new(0., 0., 0.),
@@ -439,46 +446,48 @@ fn axis(mut gizmos: Gizmos) {
 
 fn camera_control(
     camera_focus: Res<CameraFocus>,
-    mut set: ParamSet<(
-        Query<(&mut PanOrbitCamera, &mut Transform)>,
-        Query<(&Transform, &Moon)>,
-        Query<(&Transform, &Earth)>,
-        Query<(&Transform, &Airplane)>,
-        Query<(&Transform, &CommonPlanets)>,
-    )>,
+    mut camera: Query<(&mut PanOrbitCamera, &mut Transform)>,
+    earth: Query<(&Earth, &Transform), Without<PanOrbitCamera>>,
+    moon: Query<(&Moon, &Transform), Without<PanOrbitCamera>>,
+    planets: Query<(&CommonPlanets, &Transform), Without<PanOrbitCamera>>,
+    airplane: Query<(&Airplane, &Transform), Without<PanOrbitCamera>>,
+    // mut set: ParamSet<(
+    //     Query<(&mut MyCamera, &mut Transform)>,
+    //     Query<(&Transform, &Moon)>,
+    //     Query<(&Transform, &Earth)>,
+    //     Query<(&Transform, &Airplane)>,
+    //     Query<(&Transform, &CommonPlanets)>,
+    // )>,
 ) {
     let mut target = Vec3::ZERO;
     match camera_focus.focus.as_str() {
         constant::earth::NAME => {
-            let query = set.p2();
-            let earth = query.single();
-            target += earth.0.translation;
+            let earth = earth.single();
+            target += earth.1.translation;
         }
         constant::moon::NAME => {
-            let query = set.p1();
-            let moon = query.single();
-            target += moon.0.translation;
+            let moon = moon.single();
+            target += moon.1.translation;
         }
         constant::airplane::NAME => {
-            let query = set.p3();
-            let plane = query.single();
-            target += plane.0.translation;
+            let plane = airplane.single();
+            target += plane.1.translation;
         }
         "Global" => {
             return;
         }
         _ => {
-            let query = set.p4();
             // let plane = query.single();
-            for (transform, planet) in &query {
+            for (planet, transform) in &planets {
                 if planet.name() == camera_focus.focus {
                     target += transform.translation;
                 }
             }
         }
     }
-    let mut camera = set.p0();
+    // let mut camera = set.p0();
     let mut camera = camera.single_mut();
-    *camera.1 = Transform::from_translation(target + Vec3::new(50.0, 50.0, 50.0))
-        .looking_at(target, Vec3::Y);
+    let delta_translation = Vec3::new(50.0, 50.0, 50.0);
+    // camera.1.translation = target + delta_translation;
+    camera.0.target_focus = target;
 }
