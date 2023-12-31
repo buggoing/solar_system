@@ -1,20 +1,25 @@
 pub mod airplane;
 pub mod button;
+pub mod camera;
 pub mod constant;
 pub mod planets;
+
 use crate::planets::CommonPlanets;
 use crate::planets::Planets;
-use airplane::{airplane_control, airplane_direction, set_plane, Airplane};
+use airplane::{
+    airplane_direction, control_airplane, control_bullet, set_plane, spawn_bullet, Airplane,
+};
 use bevy::{prelude::*, window::WindowMode};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use button::{
-    button_handler, mouse_button_input, scroll_events, touchpad_gestures, ChangeViewButton,
+    handle_button, mouse_button_input, scroll_events, touchpad_gestures, ChangeViewButton,
 };
+use camera::control_camera;
 use constant::{moon::DISTANCE_TO_EARTH, SPACE_SCALE};
 use planets::{move_planets, Earth};
 
 #[derive(Component)]
-struct Moon {
+pub struct Moon {
     distance_to_earth: f32,
 }
 
@@ -52,15 +57,17 @@ fn main() {
             (
                 move_moon,
                 axis,
-                button_handler,
-                camera_control,
+                handle_button,
+                control_camera,
                 mouse_button_input,
                 touchpad_gestures,
                 scroll_events,
-                airplane_control,
+                control_airplane,
                 airplane_direction,
                 move_planets::<CommonPlanets>,
                 move_planets::<Earth>,
+                spawn_bullet,
+                control_bullet,
             ),
         )
         .run()
@@ -442,52 +449,4 @@ fn axis(mut gizmos: Gizmos) {
         Color::GREEN,
     );
     gizmos.ray(Vec3::new(0., 0., 0.), Vec3::new(0., 100., 0.), Color::GREEN);
-}
-
-fn camera_control(
-    camera_focus: Res<CameraFocus>,
-    mut camera: Query<(&mut PanOrbitCamera, &mut Transform)>,
-    earth: Query<(&Earth, &Transform), Without<PanOrbitCamera>>,
-    moon: Query<(&Moon, &Transform), Without<PanOrbitCamera>>,
-    planets: Query<(&CommonPlanets, &Transform), Without<PanOrbitCamera>>,
-    airplane: Query<(&Airplane, &Transform), Without<PanOrbitCamera>>,
-    // mut set: ParamSet<(
-    //     Query<(&mut MyCamera, &mut Transform)>,
-    //     Query<(&Transform, &Moon)>,
-    //     Query<(&Transform, &Earth)>,
-    //     Query<(&Transform, &Airplane)>,
-    //     Query<(&Transform, &CommonPlanets)>,
-    // )>,
-) {
-    let mut target = Vec3::ZERO;
-    match camera_focus.focus.as_str() {
-        constant::earth::NAME => {
-            let earth = earth.single();
-            target += earth.1.translation;
-        }
-        constant::moon::NAME => {
-            let moon = moon.single();
-            target += moon.1.translation;
-        }
-        constant::airplane::NAME => {
-            let plane = airplane.single();
-            target += plane.1.translation;
-        }
-        "Global" => {
-            return;
-        }
-        _ => {
-            // let plane = query.single();
-            for (planet, transform) in &planets {
-                if planet.name() == camera_focus.focus {
-                    target += transform.translation;
-                }
-            }
-        }
-    }
-    // let mut camera = set.p0();
-    let mut camera = camera.single_mut();
-    let delta_translation = Vec3::new(50.0, 50.0, 50.0);
-    // camera.1.translation = target + delta_translation;
-    camera.0.target_focus = target;
 }

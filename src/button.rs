@@ -98,7 +98,7 @@ fn add_button(cmd: &mut ChildBuilder, btn: ChangeViewButton) {
     });
 }
 
-pub fn button_handler(
+pub fn handle_button(
     mut interaction_query: Query<
         (
             &Interaction,
@@ -161,10 +161,7 @@ pub fn touchpad_gestures(
 
 use bevy::input::mouse::MouseWheel;
 
-pub fn scroll_events(
-    mut scroll_evr: EventReader<MouseWheel>,
-    mut camera_focus: ResMut<CameraFocus>,
-) {
+pub fn scroll_events(mut scroll_evr: EventReader<MouseWheel>) {
     use bevy::input::mouse::MouseScrollUnit;
     for ev in scroll_evr.read() {
         match ev.unit {
@@ -175,7 +172,7 @@ pub fn scroll_events(
                 );
             }
             MouseScrollUnit::Pixel => {
-                camera_focus.focus = ChangeViewButton::Global.name().into();
+                // camera_focus.focus = ChangeViewButton::Global.name().into();
                 // println!(
                 //     "Scroll (pixel units): vertical: {}, horizontal: {}",
                 //     ev.y, ev.x
