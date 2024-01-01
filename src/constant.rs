@@ -2,7 +2,14 @@ use std::f32::consts::PI;
 
 pub const ONE_DAY_SECONDS: f32 = (24 * 60 * 60) as f32;
 pub const TIME_SCALE: f32 = (24 * 60 * 6) as f32; // 10s => 1day
-pub const SPACE_SCALE: f32 = 1.0 / earth::RADIUS;
+pub const SPACE_SCALE: f32 = 1.0 / 1.0;
+pub const PLANET_GLTF_SCALE: f32 = 1.0 / 500.0;
+
+pub mod sun {
+    use super::*;
+    pub const NAME: &str = "Sun";
+    pub const RADIUS: f32 = 696000.0;
+}
 pub mod mercury {
     use super::*;
     pub const NAME: &str = "Mercury";
@@ -43,7 +50,7 @@ pub mod moon {
     const ROTATION_PERIOD: f32 = 27.3;
     pub const ORBITAL_VELCITY: f32 = 2.0 * PI / (ORBITAL_PERIOD * ONE_DAY_SECONDS);
     pub const ROTATION_VELCITY: f32 = 2.0 * PI / (ROTATION_PERIOD * ONE_DAY_SECONDS) as f32;
-    pub const RADIUS: f32 = 1737.4;
+    pub const RADIUS: f32 = 1737.1;
     pub const DISTANCE_TO_EARTH: f32 = 384400.0;
 }
 
@@ -54,7 +61,7 @@ pub mod mars {
     const ROTATION_PERIOD: f32 = (24. + 37. / 60.) / 24.; // day 1d37min
     pub const ORBITAL_VELCITY: f32 = 2.0 * PI / (ORBITAL_PERIOD * ONE_DAY_SECONDS);
     pub const ROTATION_VELCITY: f32 = 2.0 * PI / (ROTATION_PERIOD * ONE_DAY_SECONDS);
-    pub const RADIUS: f32 = 3389.5;
+    pub const RADIUS: f32 = 3390.0;
     pub const DISTANCE_TO_SUN: f32 = 227_900_000.0;
 }
 

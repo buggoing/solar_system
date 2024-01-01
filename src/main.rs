@@ -4,17 +4,25 @@ pub mod camera;
 pub mod constant;
 pub mod planets;
 
+use std::sync::Arc;
+
+use crate::constant::PLANET_GLTF_SCALE;
 use crate::planets::CommonPlanets;
 use crate::planets::Planets;
 use airplane::{
     airplane_direction, control_airplane, control_bullet, set_plane, spawn_bullet, Airplane,
 };
+use bevy::asset::StrongHandle;
+use bevy::scene::SceneInstance;
 use bevy::{prelude::*, window::WindowMode};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_inspector_egui::DefaultInspectorConfigPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use button::{
     handle_button, mouse_button_input, scroll_events, touchpad_gestures, ChangeViewButton,
 };
 use camera::control_camera;
+use constant::earth;
 use constant::{moon::DISTANCE_TO_EARTH, SPACE_SCALE};
 use planets::{move_planets, Earth};
 
@@ -28,8 +36,6 @@ pub struct CameraFocus {
     focus: String,
 }
 
-const PLANET_DISTANCE_TO_SUN_SCALE: f32 = 100000.0;
-
 fn main() {
     let window_plugin = WindowPlugin {
         primary_window: Some(Window {
@@ -42,6 +48,7 @@ fn main() {
 
     App::new()
         .add_plugins(DefaultPlugins.set(window_plugin))
+        .add_plugins(WorldInspectorPlugin::new())
         .add_plugins(PanOrbitCameraPlugin)
         .insert_resource(ClearColor(Color::rgb(0.1, 0.0, 0.15)))
         .insert_resource(AmbientLight {
@@ -137,7 +144,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Sun
     commands.spawn((SceneBundle {
         scene: asset_server.load("Sun.glb#Scene0"),
-        transform: Transform::from_xyz(0., 0., 0.).with_scale(Vec3::splat(1. / 5.)),
+        transform: Transform::from_xyz(0., 0., 0.).with_scale(Vec3::splat(
+            PLANET_GLTF_SCALE * SPACE_SCALE * constant::sun::RADIUS,
+        )),
         ..default()
     },));
 
@@ -146,15 +155,17 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         SceneBundle {
             scene: asset_server.load("Mercury.glb#Scene0"),
             transform: Transform::from_xyz(
-                constant::mercury::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+                constant::mercury::DISTANCE_TO_SUN * SPACE_SCALE,
                 0.,
                 0.,
             )
-            .with_scale(Vec3::splat(0.02)),
+            .with_scale(Vec3::splat(
+                PLANET_GLTF_SCALE * SPACE_SCALE * constant::mercury::RADIUS,
+            )),
             ..default()
         },
         CommonPlanets::new(
-            constant::mercury::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::mercury::DISTANCE_TO_SUN * SPACE_SCALE,
             constant::mercury::RADIUS,
             constant::mercury::ROTATION_VELCITY,
             constant::mercury::ORBITAL_VELCITY,
@@ -166,16 +177,14 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         SceneBundle {
             scene: asset_server.load("Venus.glb#Scene0"),
-            transform: Transform::from_xyz(
-                constant::venus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
-                0.,
-                0.,
-            )
-            .with_scale(Vec3::splat(0.02)),
+            transform: Transform::from_xyz(constant::venus::DISTANCE_TO_SUN * SPACE_SCALE, 0., 0.)
+                .with_scale(Vec3::splat(
+                    PLANET_GLTF_SCALE * SPACE_SCALE * constant::venus::RADIUS,
+                )),
             ..default()
         },
         CommonPlanets::new(
-            constant::venus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::venus::DISTANCE_TO_SUN * SPACE_SCALE,
             constant::venus::RADIUS,
             constant::venus::ROTATION_VELCITY,
             constant::venus::ORBITAL_VELCITY,
@@ -184,27 +193,23 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 
     // Earth
-    let es = asset_server.load("Earth.glb#Scene0");
+    let earch_x = constant::earth::DISTANCE_TO_SUN * SPACE_SCALE;
     commands.spawn((
         SceneBundle {
-            scene: es,
-            transform: Transform::from_xyz(
-                constant::earth::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
-                0.,
-                0.,
-            )
-            .with_scale(Vec3::splat(0.02)),
+            scene: asset_server.load("Earth.glb#Scene0"),
+            transform: Transform::from_xyz(earch_x, 0., 0.).with_scale(Vec3::splat(
+                PLANET_GLTF_SCALE * SPACE_SCALE * constant::earth::RADIUS,
+            )),
             ..default()
         },
         Earth::new(
-            constant::earth::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::earth::DISTANCE_TO_SUN * SPACE_SCALE,
             constant::earth::RADIUS,
             constant::earth::ROTATION_VELCITY,
             constant::earth::ORBITAL_VELCITY,
             constant::earth::NAME.into(),
         ),
     ));
-
     // Moon
     commands.spawn((
         // PbrBundle {
@@ -225,12 +230,18 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         // },
         SceneBundle {
             scene: asset_server.load("Moon.glb#Scene0"),
-            transform: Transform::from_xyz(100.0 + DISTANCE_TO_EARTH * SPACE_SCALE, 0., 0.)
-                .with_scale(Vec3::splat(1.0 / 120.)),
+            transform: Transform::from_xyz(
+                (DISTANCE_TO_EARTH + constant::earth::RADIUS) * SPACE_SCALE,
+                0.,
+                0.,
+            )
+            .with_scale(Vec3::splat(
+                PLANET_GLTF_SCALE * SPACE_SCALE * constant::moon::RADIUS,
+            )),
             ..default()
         },
         Moon {
-            distance_to_earth: constant::moon::DISTANCE_TO_EARTH * constant::SPACE_SCALE,
+            distance_to_earth: constant::moon::DISTANCE_TO_EARTH * SPACE_SCALE,
         },
     ));
 
@@ -238,16 +249,14 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         SceneBundle {
             scene: asset_server.load("Mars.glb#Scene0"),
-            transform: Transform::from_xyz(
-                constant::mars::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
-                0.,
-                0.,
-            )
-            .with_scale(Vec3::splat(0.02)),
+            transform: Transform::from_xyz(constant::mars::DISTANCE_TO_SUN * SPACE_SCALE, 0., 0.)
+                .with_scale(Vec3::splat(
+                    PLANET_GLTF_SCALE * SPACE_SCALE * constant::mars::RADIUS,
+                )),
             ..default()
         },
         CommonPlanets::new(
-            constant::mars::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::mars::DISTANCE_TO_SUN * SPACE_SCALE,
             constant::mars::RADIUS,
             constant::mars::ROTATION_VELCITY,
             constant::mars::ORBITAL_VELCITY,
@@ -260,15 +269,17 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         SceneBundle {
             scene: asset_server.load("Jupiter.glb#Scene0"),
             transform: Transform::from_xyz(
-                constant::jupiter::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+                constant::jupiter::DISTANCE_TO_SUN * SPACE_SCALE,
                 0.,
                 0.,
             )
-            .with_scale(Vec3::splat(0.02)),
+            .with_scale(Vec3::splat(
+                PLANET_GLTF_SCALE * SPACE_SCALE * constant::jupiter::RADIUS,
+            )),
             ..default()
         },
         CommonPlanets::new(
-            constant::jupiter::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::jupiter::DISTANCE_TO_SUN * SPACE_SCALE,
             constant::jupiter::RADIUS,
             constant::jupiter::ROTATION_VELCITY,
             constant::jupiter::ORBITAL_VELCITY,
@@ -280,16 +291,14 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         SceneBundle {
             scene: asset_server.load("Saturn.glb#Scene0"),
-            transform: Transform::from_xyz(
-                constant::saturn::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
-                0.,
-                0.,
-            )
-            .with_scale(Vec3::splat(0.02)),
+            transform: Transform::from_xyz(constant::saturn::DISTANCE_TO_SUN * SPACE_SCALE, 0., 0.)
+                .with_scale(Vec3::splat(
+                    PLANET_GLTF_SCALE * SPACE_SCALE * constant::saturn::RADIUS,
+                )),
             ..default()
         },
         CommonPlanets::new(
-            constant::saturn::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::saturn::DISTANCE_TO_SUN * SPACE_SCALE,
             constant::saturn::RADIUS,
             constant::saturn::ROTATION_VELCITY,
             constant::saturn::ORBITAL_VELCITY,
@@ -301,19 +310,17 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         SceneBundle {
             scene: asset_server.load("Uranus.glb#Scene0"),
-            transform: Transform::from_xyz(
-                constant::uranus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
-                0.,
-                0.,
-            )
-            .with_scale(Vec3::splat(0.02)),
+            transform: Transform::from_xyz(constant::uranus::DISTANCE_TO_SUN * SPACE_SCALE, 0., 0.)
+                .with_scale(Vec3::splat(
+                    PLANET_GLTF_SCALE * SPACE_SCALE * constant::uranus::RADIUS,
+                )),
             ..default()
         },
         // Uranus {
-        //     distance_to_sun: constant::uranus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+        //     distance_to_sun: constant::uranus::DISTANCE_TO_SUN * SPACE_SCALE,
         // }
         CommonPlanets::new(
-            constant::uranus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::uranus::DISTANCE_TO_SUN * SPACE_SCALE,
             constant::uranus::RADIUS,
             constant::uranus::ROTATION_VELCITY,
             constant::uranus::ORBITAL_VELCITY,
@@ -326,15 +333,17 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         SceneBundle {
             scene: asset_server.load("Neptune.glb#Scene0"),
             transform: Transform::from_xyz(
-                constant::neptune::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+                constant::neptune::DISTANCE_TO_SUN * SPACE_SCALE,
                 0.,
                 0.,
             )
-            .with_scale(Vec3::splat(0.02)),
+            .with_scale(Vec3::splat(
+                PLANET_GLTF_SCALE * SPACE_SCALE * constant::neptune::RADIUS,
+            )),
             ..default()
         },
         CommonPlanets::new(
-            constant::neptune::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::neptune::DISTANCE_TO_SUN * SPACE_SCALE,
             constant::neptune::RADIUS,
             constant::neptune::ROTATION_VELCITY,
             constant::neptune::ORBITAL_VELCITY,
@@ -349,13 +358,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             //     far: 10000.0, // change the maximum render distance
             //     ..default()
             // }),
-            transform: Transform::from_xyz(0.0, 500., 0.0).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_xyz(earch_x + 100.0, earch_x + 100.0, 0.0)
+                .looking_at(Vec3::new(earch_x, 0.0, 0.0), Vec3::Z),
             ..default()
         },
-        PanOrbitCamera {
-            // target_focus: Vec3::new(0.0, 500., 0.0),
-            ..default()
-        },
+        PanOrbitCamera { ..default() },
     ));
 }
 
@@ -367,7 +374,7 @@ fn axis(mut gizmos: Gizmos) {
         .circle(
             Vec3::ZERO,
             Vec3::Y,
-            constant::mercury::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::mercury::DISTANCE_TO_SUN * SPACE_SCALE,
             Color::SILVER,
         )
         .segments(256);
@@ -376,7 +383,7 @@ fn axis(mut gizmos: Gizmos) {
         .circle(
             Vec3::ZERO,
             Vec3::Y,
-            constant::venus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::venus::DISTANCE_TO_SUN * SPACE_SCALE,
             Color::OLIVE,
         )
         .segments(256);
@@ -385,16 +392,16 @@ fn axis(mut gizmos: Gizmos) {
         .circle(
             Vec3::ZERO,
             Vec3::Y,
-            constant::earth::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::earth::DISTANCE_TO_SUN * SPACE_SCALE,
             Color::rgb_u8(70, 130, 180),
         )
-        .segments(256);
+        .segments(1024);
 
     gizmos
         .circle(
             Vec3::ZERO,
             Vec3::Y,
-            constant::mars::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::mars::DISTANCE_TO_SUN * SPACE_SCALE,
             Color::rgb_u8(232, 155, 0), // Yellow Ochre
         )
         .segments(256);
@@ -403,7 +410,7 @@ fn axis(mut gizmos: Gizmos) {
         .circle(
             Vec3::ZERO,
             Vec3::Y,
-            constant::jupiter::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::jupiter::DISTANCE_TO_SUN * SPACE_SCALE,
             Color::SILVER,
         )
         .segments(256);
@@ -412,7 +419,7 @@ fn axis(mut gizmos: Gizmos) {
         .circle(
             Vec3::ZERO,
             Vec3::Y,
-            constant::saturn::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::saturn::DISTANCE_TO_SUN * SPACE_SCALE,
             Color::SILVER,
         )
         .segments(256);
@@ -421,7 +428,7 @@ fn axis(mut gizmos: Gizmos) {
         .circle(
             Vec3::ZERO,
             Vec3::Y,
-            constant::uranus::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::uranus::DISTANCE_TO_SUN * SPACE_SCALE,
             Color::rgb_u8(32, 178, 170),
         )
         .segments(256);
@@ -430,7 +437,7 @@ fn axis(mut gizmos: Gizmos) {
         .circle(
             Vec3::ZERO,
             Vec3::Y,
-            constant::neptune::DISTANCE_TO_SUN / PLANET_DISTANCE_TO_SUN_SCALE,
+            constant::neptune::DISTANCE_TO_SUN * SPACE_SCALE,
             // Color::rgb_u8(0, 191, 255),
             Color::BLUE,
         )
@@ -441,7 +448,15 @@ fn axis(mut gizmos: Gizmos) {
         Vec3::new(-100., 0., 0.),
         Color::GREEN,
     );
-    gizmos.ray(Vec3::new(0., 0., 0.), Vec3::new(100., 0., 0.), Color::GREEN);
+    gizmos.ray(
+        Vec3::new(0., 0., 0.),
+        Vec3::new(
+            constant::earth::DISTANCE_TO_SUN * SPACE_SCALE + 100.,
+            0.,
+            0.,
+        ),
+        Color::GREEN,
+    );
 
     gizmos.ray(
         Vec3::new(0., 0., 0.),

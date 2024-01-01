@@ -6,4 +6,4 @@ WebAssembly online: [here](https://buggoing.github.io/solar_system/)
 
 ## Todo List
 - [ ] making sun as a point light
-- [ ] using real planet size, distance, obrit speed etc.
+- [x] using real planet size, distance, obrit speed etc.

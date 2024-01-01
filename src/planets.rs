@@ -105,10 +105,25 @@ impl Planets for Earth {
     }
 }
 
-pub fn move_planets<T>(time: Res<Time>, mut query: Query<(&mut Transform, &T)>)
+pub fn move_planets<T>(time: Res<Time>, mut query: Query<(&mut Transform, &T), Without<Earth>>)
 where
     T: Planets + bevy::prelude::Component,
 {
+    for (mut transform, planet) in &mut query {
+        // let movement = transf.forward() + transf.left();
+        transform.rotate_y(TIME_SCALE * planet.rotation_velocity() * time.delta_seconds());
+
+        let elapsed_seconds = time.elapsed_seconds();
+        let angle = elapsed_seconds * TIME_SCALE * planet.orbital_velocity();
+        transform.translation = Vec3::new(
+            planet.distance_to_sun() * angle.cos(),
+            0.0,
+            planet.distance_to_sun() * angle.sin(),
+        );
+    }
+}
+
+pub fn move_earth(time: Res<Time>, mut query: Query<(&mut Transform, &Earth)>) {
     for (mut transform, planet) in &mut query {
         // let movement = transf.forward() + transf.left();
         transform.rotate_y(TIME_SCALE * planet.rotation_velocity() * time.delta_seconds());

@@ -3,6 +3,7 @@ use bevy::prelude::*;
 
 #[derive(Component)]
 pub enum ChangeViewButton {
+    Sun,
     Mercury,
     Venus,
     Earth,
@@ -19,6 +20,7 @@ pub enum ChangeViewButton {
 impl ChangeViewButton {
     pub fn name(&self) -> &str {
         match *self {
+            ChangeViewButton::Sun => constant::sun::NAME,
             ChangeViewButton::Mercury => constant::mercury::NAME,
             ChangeViewButton::Venus => constant::venus::NAME,
             ChangeViewButton::Earth => constant::earth::NAME,
@@ -48,6 +50,7 @@ pub fn setup_button(mut commands: Commands) {
         })
         .with_children(|parent| {
             let btns = vec![
+                ChangeViewButton::Sun,
                 ChangeViewButton::Mercury,
                 ChangeViewButton::Venus,
                 ChangeViewButton::Earth,
